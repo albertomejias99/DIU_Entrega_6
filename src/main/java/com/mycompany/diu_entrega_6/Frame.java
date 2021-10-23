@@ -26,17 +26,17 @@ import org.opencv.imgproc.Imgproc;
  */
 public class Frame extends javax.swing.JFrame {
 
+    static {nu.pattern.OpenCV.loadShared();}
+    static {System.loadLibrary(Core.NATIVE_LIBRARY_NAME);}
     JFileChooser fc = new JFileChooser();
     FileNameExtensionFilter filtro = null;
     BufferedImage im = null;
     File fichero = null;
     Mat imgUmbralizada = null;
-
+    
     public Frame() {
         initComponents();
         this.setTitle("Umbralizar una imagen - Jorge Marrer & Alberto Mejias");
-        nu.pattern.OpenCV.loadShared();
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
     }
 
     /**
