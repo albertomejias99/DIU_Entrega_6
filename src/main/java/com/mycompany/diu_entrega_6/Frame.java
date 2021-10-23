@@ -16,6 +16,8 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.highgui.HighGui;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 /**
@@ -27,9 +29,12 @@ public class Frame extends javax.swing.JFrame {
     JFileChooser fc = new JFileChooser();
     FileNameExtensionFilter filtro = null;
     BufferedImage im = null;
+    File fichero = null;
+    Mat imgUmbralizada = null;
 
     public Frame() {
         initComponents();
+        this.setTitle("Umbralizar una imagen - Jorge Marrer & Alberto Mejias");
         nu.pattern.OpenCV.loadShared();
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
     }
@@ -90,6 +95,11 @@ public class Frame extends javax.swing.JFrame {
 
         guardar.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.CTRL_DOWN_MASK));
         guardar.setText("Guardar");
+        guardar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                guardarActionPerformed(evt);
+            }
+        });
         ficheroMenu.add(guardar);
 
         menuBar.add(ficheroMenu);
@@ -151,7 +161,8 @@ public class Frame extends javax.swing.JFrame {
         fc.addChoosableFileFilter(filtro);
         int op = fc.showOpenDialog(null);
         if (op == JFileChooser.APPROVE_OPTION) {
-            File fichero = fc.getSelectedFile();
+            fichero = fc.getSelectedFile();
+            imgUmbralizada = Imgcodecs.imread(fichero.getAbsolutePath());
             try {
                 im = ImageIO.read(fichero);
                 if (im.getWidth() > 1024 || im.getHeight() > 768) {
@@ -159,6 +170,7 @@ public class Frame extends javax.swing.JFrame {
                 } else {
                     this.setSize(new Dimension(im.getWidth() + 20, im.getHeight() + 60));
                     lienzo.setImagen(im);
+                    this.setResizable(false);
                 }
             } catch (IOException ex) {
             }
@@ -166,9 +178,39 @@ public class Frame extends javax.swing.JFrame {
     }//GEN-LAST:event_abrirActionPerformed
 
     private void umbralizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_umbralizarActionPerformed
-        String input = JOptionPane.showInputDialog(rootPane, "Escribe el valor del umbral", "Umbralizar", JOptionPane.QUESTION_MESSAGE);
-        System.out.println(input);
+        if (fichero != null) {
+            String input = JOptionPane.showInputDialog(rootPane, "Escribe el valor del umbral", "Umbralizar", JOptionPane.QUESTION_MESSAGE);
+            Mat imgOriginal = Imgcodecs.imread(fichero.getAbsolutePath());
+            try {
+                imgUmbralizada = umbralizar(imgOriginal, Integer.parseInt(input));
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(rootPane, "Debes introducir un número", "Input erróneo", JOptionPane.ERROR_MESSAGE);
+            }
+            BufferedImage imgUmb = (BufferedImage) HighGui.toBufferedImage(imgUmbralizada);
+            lienzo.setImagen(imgUmb);
+        } else {
+            JOptionPane.showMessageDialog(rootPane, "Debes abrir un fichero primero", "Error al umbralizar", JOptionPane.ERROR_MESSAGE);
+
+        }
     }//GEN-LAST:event_umbralizarActionPerformed
+
+    private void guardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_guardarActionPerformed
+        if (fichero != null) {
+            int op = fc.showSaveDialog(null);
+            if (op == JFileChooser.APPROVE_OPTION) {
+                if (fc.getSelectedFile().getName().equals(fichero.getName())) {
+                    int dialog = JOptionPane.showConfirmDialog(rootPane, "¿Está seguro que quiere sobreescribir el archivo?", "Sobreescribir", JOptionPane.YES_NO_OPTION);
+                    if (dialog == JOptionPane.YES_OPTION) {
+                        Imgcodecs.imwrite(fc.getSelectedFile().getAbsolutePath(), imgUmbralizada);
+                    }
+                } else {
+                    Imgcodecs.imwrite(fc.getSelectedFile().getAbsolutePath(), imgUmbralizada);
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(rootPane, "Debes abrir un fichero primero", "Error al guardar", JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_guardarActionPerformed
 
     private Mat umbralizar(Mat imagen_original, Integer umbral) {
 // crear dos imágenes en niveles de gris con el mismo
@@ -193,6 +235,38 @@ public class Frame extends javax.swing.JFrame {
                 Imgproc.THRESH_BINARY);
 // se devuelve la imagen umbralizada
         return imagenUmbralizada;
+    }
+
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(Frame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(Frame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(Frame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(Frame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new Frame().setVisible(true);
+            }
+        });
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
